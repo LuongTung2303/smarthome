@@ -1,6 +1,32 @@
-import React from "react";
-
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { registerUser } from "../../services/authService";
 function Register() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const navigate = useNavigate();
+
+  const handleReister = async (e) => {
+    e.preventDefault();
+
+    // So sánh password và password_confirmation
+    if (password !== confirmPassword) {
+      setError("Mật khẩu và xác nhận mật khẩu không giống nhau.");
+      return;
+    }
+
+    try {
+      await registerUser({ username, password }); // Gọi API
+      navigate("/login"); // Đăng ký thành công thì chuyển sang login
+    } catch (err) {
+      setError(err.message); // Hiển thị lỗi nếu có
+    }
+  };
+
+
   return (
     <div class="bg-gray-50">
       <div class="min-h-screen flex flex-col items-center justify-center py-6 px-4">
@@ -17,7 +43,8 @@ function Register() {
             <h2 class="text-slate-900 text-center text-3xl font-semibold">
               Register
             </h2>
-            <form class="mt-12 space-y-6">
+            {error && <p style={{ color: "red" }}>{error}</p>}
+            <form class="mt-12 space-y-6" onSubmit={handleReister}>
               <div>
                 <label class="text-slate-800 text-sm font-medium mb-2 block">
                   User name
@@ -29,6 +56,8 @@ function Register() {
                     required
                     class="w-full text-slate-800 text-sm border border-slate-300 px-4 py-3 rounded-md outline-blue-600"
                     placeholder="Enter user name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                   />
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -62,6 +91,8 @@ function Register() {
                     required
                     class="w-full text-slate-800 text-sm border border-slate-300 px-4 py-3 rounded-md outline-blue-600"
                     placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -84,11 +115,13 @@ function Register() {
                 </label>
                 <div class="relative flex items-center">
                   <input
-                    name="password"
+                    name="confirmPassword"
                     type="password"
                     required
                     class="w-full text-slate-800 text-sm border border-slate-300 px-4 py-3 rounded-md outline-blue-600"
                     placeholder="Enter password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -107,7 +140,7 @@ function Register() {
         
               <div class="!mt-12">
                 <button
-                  type="button"
+                  type="submit"
                   class="w-full py-2 px-4 text-[15px] font-medium tracking-wide rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
                 >
                   Register

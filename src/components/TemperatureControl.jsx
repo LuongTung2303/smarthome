@@ -3,7 +3,9 @@ import summer from "../assets/images/summer.png";
 import snowflake from "../assets/images/snowflake.png";
 import fan from "../assets/images/fan.png";
 import dry from "../assets/images/dry.png";
-function TemperatureControl() {
+import { setTemp } from "../services/apiFeeds";
+
+function TemperatureControl({ socket }) {
   const [temperature, setTemperature] = useState(22);
   const [angle, setAngle] = useState(0);
   const [isOn, setIsOn] = useState(false);
@@ -15,6 +17,9 @@ function TemperatureControl() {
   const minTemp = 10;
   const maxTemp = 30;
   const [activeMode, setActiveMode] = useState(null);
+
+  const [lastSentTemp, setLastSentTemp] = useState(null);
+
 
   const modes = [
     { name: "snowflake", icon: snowflake },
@@ -57,8 +62,20 @@ function TemperatureControl() {
     }
   };
 
-  const handleMouseUp = () => {
+  // const handleMouseUp = () => {
+  //   isDragging.current = false;
+  // };
+  const handleMouseUp = async () => {
     isDragging.current = false;
+  
+    if (isOn && temperature !== lastSentTemp) {
+      try {
+        await setTemp(temperature);
+        setLastSentTemp(temperature);
+      } catch (err) {
+        alert("Gửi nhiệt độ thất bại");
+      }
+    }
   };
 
   useEffect(() => {
@@ -69,6 +86,27 @@ function TemperatureControl() {
       window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isOn]);
+
+  useEffect(() => {
+    if (!socket) return;
+  
+    const handleTempUpdate = (data) => {
+      const newTemp = parseInt(data.value);
+      if (!isDragging.current) {
+        setTemperature(newTemp);
+        // tính góc từ nhiệt độ để xoay núm
+        const newAngle = ((newTemp - minTemp) / (maxTemp - minTemp)) * 270;
+        setAngle(newAngle);
+      }
+    };
+  
+    socket.on("temperature_update", handleTempUpdate);
+  
+    return () => {
+      socket.off("temperature_update", handleTempUpdate);
+    };
+  }, [socket]);
+  
 
   return (
     <div className="mt-[50px]">
@@ -89,7 +127,7 @@ function TemperatureControl() {
           <div className="absolute w-4 h-4 bg-white rounded-full top-2 left-1/2 transform -translate-x-1/2" />
         </div>
 
-        <p className="mt-4 text-xl">Nhiệt độ hiện tại: {temperature}°C</p>
+        <p className="mt-4 text-xl">Current temperature: {temperature}°C</p>
 
         <div className="flex space-x-10 ">
           <button

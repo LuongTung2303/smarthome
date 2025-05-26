@@ -1,10 +1,17 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 function Navbar() {
   const location = useLocation();
-
+  const navigate = useNavigate();
   const isActive = (path) => location.pathname === path;
+  const handleLogout = () => {
+    // Xoá token / thông tin user (nếu có)
+    localStorage.removeItem("token");
+    localStorage.removeItem("id");
+    // Điều hướng về trang đăng nhập
+    navigate("/");
+  };
   return (
     <div>
       <nav className="bg-white border-gray-200 dark:bg-gray-900">
@@ -31,6 +38,13 @@ function Navbar() {
                 alt="user photo"
               />
             </Link>
+            
+            <button
+              onClick={handleLogout}
+              className="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded text-sm px-4 py-2 text-center dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-800 !ml-[20px]"
+            >
+              Logout
+            </button>
           </div>
           <div
             className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1"

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React,  { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-
+import { getProfile } from "../../services/authService";
 function Profile() {
   const [formData, setFormData] = useState({
     fullName: "",
@@ -12,24 +12,52 @@ function Profile() {
   });
 
   const [successMessage, setSuccessMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const userId = localStorage.getItem("idUser"); // thay bằng user thật nếu có
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const profile = await getProfile(userId, token);
+        setFormData({
+          fullName: profile.fullname || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          address: profile.address || "",
+          password: profile.password,
+          dateofbirth: profile.dateofbirth
+        });
+      } catch (err) {
+        console.error(err);
+        setError("Unable to get user information");
+      }
+    };
+
+    fetchData();
+  }, [userId, token]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Giả lập lưu thành công
-    console.log("Thông tin đã cập nhật:", formData);
+    try {
+      const body = { ...formData };
+      if (!body.password) delete body.password; // nếu không đổi password thì bỏ
 
-    // Hiển thị thông báo
-    setSuccessMessage("✅ Thông tin đã được cập nhật thành công!");
+      await updateProfile(userId, body, token);
 
-    // Ẩn sau 3 giây
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
+      setSuccessMessage("✅ Thông tin đã được cập nhật thành công!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setError("❌ Có lỗi xảy ra khi cập nhật thông tin!");
+      setTimeout(() => setError(""), 3000);
+    }
   };
   return (
     <div>
@@ -37,12 +65,18 @@ function Profile() {
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white shadow-md rounded-2xl p-8 w-full max-w-2xl">
           <h2 className="text-2xl font-bold mb-6 text-gray-700 text-center">
-            Chỉnh sửa thông tin cá nhân
+          Edit personal information
           </h2>
 
           {successMessage && (
             <div className="mb-4 p-3 rounded-lg bg-green-100 text-green-700 text-center font-medium">
               {successMessage}
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-100 text-red-700 text-center font-medium">
+              {error}
             </div>
           )}
 
@@ -56,7 +90,7 @@ function Profile() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-600 mb-1">Họ và tên</label>
+              <label className="block text-gray-600 mb-1">Full name</label>
               <input
                 type="text"
                 name="fullName"
@@ -80,7 +114,7 @@ function Profile() {
             </div>
 
             <div>
-              <label className="block text-gray-600 mb-1">Số điện thoại</label>
+              <label className="block text-gray-600 mb-1">Phone number</label>
               <input
                 type="tel"
                 name="phone"
@@ -92,7 +126,19 @@ function Profile() {
             </div>
 
             <div>
-              <label className="block text-gray-600 mb-1">Địa chỉ</label>
+              <label className="block text-gray-600 mb-1">Date of birth</label>
+              <input
+                type="date"
+                name="dob"
+                value={formData.dateofbirth}
+                onChange={handleChange}
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                placeholder="Ngày sinh"
+              />
+          </div>
+
+            <div>
+              <label className="block text-gray-600 mb-1">Address</label>
               <input
                 type="text"
                 name="address"
@@ -104,7 +150,7 @@ function Profile() {
             </div>
 
             <div>
-              <label className="block text-gray-600 mb-1">Mật khẩu mới</label>
+              <label className="block text-gray-600 mb-1">New password</label>
               <input
                 type="password"
                 name="password"
@@ -119,7 +165,7 @@ function Profile() {
               type="submit"
               className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition"
             >
-              Lưu thay đổi
+              Save changes
             </button>
           </form>
         </div>
