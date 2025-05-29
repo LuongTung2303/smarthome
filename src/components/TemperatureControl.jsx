@@ -88,6 +88,7 @@ function TemperatureControl({ socket }) {
   }, [isOn]);
 
   useEffect(() => {
+    socket.connect();
     if (!socket) return;
   
     const handleTempUpdate = (data) => {
