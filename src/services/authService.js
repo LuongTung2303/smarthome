@@ -11,11 +11,12 @@ export const loginUser = async (username, password) => {
 
 
     localStorage.setItem('token', response.data.token);
-    localStorage.setItem('idUser',response.data.id);
+    localStorage.setItem('idUser',response.data.data.id);
 
     return response.data;
   } catch (error) {
     console.error('Login failed:', error);
+    alert('Đăng nhập thất bại. Vui lòng kiểm tra lỗi');
     throw error;
   }
 };
@@ -38,7 +39,7 @@ export const registerUser = async ({ username, password }) => {
 
 export const getProfile = async (userId, token) => {
   try {
-     const response = await axios.get(`/profile/get/${userId}`, {
+     const response = await api.get(`/profile/get/${userId}`, {
       headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -50,7 +51,7 @@ export const getProfile = async (userId, token) => {
 };
 
 export const updateProfile = async (userId, formData, token) => {
-  const res = await axios.put(`/profile/update/${userId}`, formData, {
+  const res = await api.put(`/profile/update/${userId}`, formData, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

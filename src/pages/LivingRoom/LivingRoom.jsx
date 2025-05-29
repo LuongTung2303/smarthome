@@ -7,7 +7,8 @@ import lightOff from "../../assets/images/LightOff.png";
 import lightOn from "../../assets/images/lightOn.png";
 import { io } from "socket.io-client";
 function LivingRoom() {
-  const socket = io("http://localhost:5000");
+  const socket = io("http://localhost:5000/feeds");
+console.log(socket);
   const [lightStates, setLightStates] = useState({
     1: false,
     2: false,
@@ -22,6 +23,8 @@ function LivingRoom() {
   ];
 
   useEffect(() => {
+        // console.log("Đã kết nối tới server");
+
     socket.on("connect", () => {
       console.log("Đã kết nối tới server");
       socket.emit("subscribe_feeds", ["led1", "led2", "led3", "led4"]);
