@@ -26,10 +26,16 @@ export const toggleLight = async (deviceName, state) => {
 
 
 export const setTemp = async (value) => {
+  const token = localStorage.getItem('token');
     try {
       const response = await axios.post(`http://localhost:5000/feeds/air_cond`, {
         value: String(value),
-      });
+      },{
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+    });
+      console.log(response.data);
       return response.data;
     } catch (error) {
       console.error("Lỗi gửi nhiệt độ:", error);

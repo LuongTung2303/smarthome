@@ -38,6 +38,7 @@ export const registerUser = async ({ username, password }) => {
   };
 
 export const getProfile = async (userId, token) => {
+  console.log("test api: ",token,userId);
   try {
      const response = await api.get(`/profile/get/${userId}`, {
       headers: {

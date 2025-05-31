@@ -4,8 +4,8 @@ import snowflake from "../assets/images/snowflake.png";
 import fan from "../assets/images/fan.png";
 import dry from "../assets/images/dry.png";
 import { setTemp } from "../services/apiFeeds";
-
-function TemperatureControl({ socket }) {
+import socket from "../socket/socket";
+function TemperatureControl() {
   const [temperature, setTemperature] = useState(22);
   const [angle, setAngle] = useState(0);
   const [isOn, setIsOn] = useState(false);
@@ -62,9 +62,7 @@ function TemperatureControl({ socket }) {
     }
   };
 
-  // const handleMouseUp = () => {
-  //   isDragging.current = false;
-  // };
+
   const handleMouseUp = async () => {
     isDragging.current = false;
   
@@ -91,13 +89,22 @@ function TemperatureControl({ socket }) {
     socket.connect();
     if (!socket) return;
   
-    const handleTempUpdate = (data) => {
+    const handleTempUpdate = async (data) => {
       const newTemp = parseInt(data.value);
       if (!isDragging.current) {
         setTemperature(newTemp);
         // tính góc từ nhiệt độ để xoay núm
         const newAngle = ((newTemp - minTemp) / (maxTemp - minTemp)) * 270;
         setAngle(newAngle);
+
+        if(newTemp !== lastSentTemp) {
+          try {
+            await setTemp(newTemp);
+            setLastSentTemp(newTemp);
+          } catch (error) {
+            console.error("Gửi nhiệt dộ thất bại");
+          }
+        }
       }
     };
   

@@ -1,14 +1,16 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import room from "../../assets/images/room.jpg";
 import Footer from "../../components/Footer";
 import hot from '../../assets/images/hot.png';
 import flash from '../../assets/images/flash.png';
 import summer from '../../assets/images/summer.png'
+import socket from "../../socket/socket";
 function Home() {
+  const [Humidity,setHumidity] = useState(0);
+  const [temperature,setTemperature] = useState(0);
   const Card = ({ image, title, description }) => {
     const [isOn, setIsOn] = useState(false);
-
     const toggleSwitch = () => setIsOn(!isOn);
     return (
       <div className="bg-white rounded-xl shadow-md overflow-hidden w-64">
@@ -57,6 +59,31 @@ function Home() {
       description: "15 devices",
     },
   ];
+
+   useEffect(() => {
+    socket.connect();
+    socket.on("connect", () => {
+      console.log("Đã kết nối tới server");
+      socket.emit("subscribe_feeds",["temp","humd"] );
+    });
+    socket.onAny((event,data) =>{console.log(event,data)});
+    socket.on("mqtt_message", (data) => {
+       console.log(data);
+      const { feed, data:value } = data;
+      if (feed =="humd") {
+        setHumidity(value);
+      }
+      if (feed =="temp") {
+        setTemperature(value);
+      }
+    });
+
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+ 
   return (
     <div>
       <Navbar />
@@ -67,8 +94,8 @@ function Home() {
               <img width={80}  src={summer} alt="" />
             </div>
             <div className="infor_content flex flex-col justify-center">
-              <p>motion</p>
-              <p>75%</p>
+              <p>Humidity</p>
+              <p>{Humidity}</p>
             </div>
           </div>
           <div className="infor flex items-center">
@@ -86,7 +113,7 @@ function Home() {
             </div>
             <div className="infor_content flex flex-col justify-center">
               <p>Temp</p>
-              <p>24°C</p>
+              <p>{temperature}</p>
             </div>
           </div>
         </div>

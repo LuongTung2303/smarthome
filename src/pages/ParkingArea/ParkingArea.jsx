@@ -1,83 +1,64 @@
-import React, { useState,useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import parkingareaoff from "../../assets/images/parkingareaoff.png";
 import parkingareaon from "../../assets/images/parkingareaon.png";
 import Footer from "../../components/Footer";
-import { io } from "socket.io-client";
+import socket from "../../socket/socket";
 
 function ParkingArea() {
-  const socket = io("http://localhost:5000");
-  const [selectedArea, setSelectedArea] = useState(null);
-  const areas = [1, 2, 3, 4];
-  const [areaStatus, setAreaStatus] = useState({
-    area1: true,
-    area2: true,
-    area3: true,
-    area4: true,
+  const [slotStatus, setSlotStatus] = useState({
+    1: false,
+    2: false,
+    3: false,
+    4: false,
   });
 
   useEffect(() => {
-    // Khi socket kết nối
+    socket.connect();
+
     socket.on("connect", () => {
       console.log("Connected to server");
-      socket.emit("subscribe_feeds", ["area1", "area2", "area3", "area4"]);
+      socket.emit("subscribe_feeds", ["slot"]); // tên feed tùy vào server
     });
 
-    // Nhận dữ liệu từ server
     socket.on("mqtt_message", (data) => {
       console.log("Received:", data);
-      const { feed, value } = data;
 
-      setAreaStatus((prev) => ({
-        ...prev,
-        [feed]: value === "0", // 0 = có xe → true
-      }));
+      const { slot } = data;
+
+      if (slot >= 1 && slot <= 4) {
+        setSlotStatus((prev) => ({
+          ...prev,
+          [slot]: slot >= 10 ? true : false, // < 10 → false → parkingareaOff
+        }));
+      }
     });
 
-    // Cleanup khi component unmount
     return () => {
       socket.off("mqtt_message");
     };
   }, []);
 
-
   return (
     <div>
       <Navbar />
-      {/* <div className="mt-[100px] grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 justify-items-center">
-          {areas.map((area) => (
-            <div
-              key={area}
-              onClick={() => setSelectedArea(area)}
-              style={{ textAlign: "center", cursor: "pointer" }}
-            >
-              <img
-                src={selectedArea === area ? parkingareaoff : parkingareaon}
-                alt={`Area ${area}`}
-                width={250}
-              />
-              <p className="text-2xl">area {area}</p>
-            </div>
-          ))}
-      </div> */}
-       <div className="mt-[100px] grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 justify-items-center">
-        {areas.map((area) => {
-          const feedKey = `area${area}`;
-          const hasCar = areaStatus[feedKey];
+      <div className="mt-[100px] grid grid-cols-1 sm:grid-cols-2 gap-6 p-6 justify-items-center">
+        {[1, 2, 3, 4].map((slot) => {
+          const isActive = slotStatus[slot];
 
           return (
-            <div key={area} style={{ textAlign: "center" }}>
+            <div key={slot} style={{ textAlign: "center" }}>
               <img
-                src={hasCar ? parkingareaon : parkingareaoff}
-                alt={`Area ${area}`}
+                src={isActive ? parkingareaon : parkingareaoff}
+                alt={`Slot ${slot}`}
                 width={250}
               />
-              <p className="text-2xl">area {area}</p>
+              <p className="text-2xl">Slot {slot}</p>
             </div>
           );
         })}
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 }

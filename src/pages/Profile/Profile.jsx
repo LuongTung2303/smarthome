@@ -14,7 +14,7 @@ function Profile() {
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
 
-  const userId = localStorage.getItem("idUser"); // thay bằng user thật nếu có
+  const userId = localStorage.getItem("idUser"); 
   const token = localStorage.getItem("token");
 
   useEffect(() => {
@@ -34,7 +34,7 @@ function Profile() {
         setError("Unable to get user information");
       }
     };
-
+    console.log(formData);
     fetchData();
   }, [userId, token]);
 
