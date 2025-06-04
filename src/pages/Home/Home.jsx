@@ -7,7 +7,7 @@ import flash from '../../assets/images/flash.png';
 import summer from '../../assets/images/summer.png'
 import socket from "../../socket/socket";
 function Home() {
-  const [Humidity,setHumidity] = useState(0);
+  const [humidity,setHumidity] = useState(0);
   const [temperature,setTemperature] = useState(0);
   const Card = ({ image, title, description }) => {
     const [isOn, setIsOn] = useState(false);
@@ -64,16 +64,16 @@ function Home() {
     socket.connect();
     socket.on("connect", () => {
       console.log("Đã kết nối tới server");
-      socket.emit("subscribe_feeds",["temp","humd"] );
+      socket.emit("subscribe_feeds",["sensor1","sensor2"] );
     });
     socket.onAny((event,data) =>{console.log(event,data)});
     socket.on("mqtt_message", (data) => {
        console.log(data);
       const { feed, data:value } = data;
-      if (feed =="humd") {
+      if (feed =="sensor2") {
         setHumidity(value);
       }
-      if (feed =="temp") {
+      if (feed =="sensor1") {
         setTemperature(value);
       }
     });
@@ -95,7 +95,7 @@ function Home() {
             </div>
             <div className="infor_content flex flex-col justify-center">
               <p>Humidity</p>
-              <p>{Humidity}</p>
+              <p>{humidity}</p>
             </div>
           </div>
           <div className="infor flex items-center">

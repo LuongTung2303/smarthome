@@ -18,20 +18,21 @@ function ParkingArea() {
 
     socket.on("connect", () => {
       console.log("Connected to server");
-      socket.emit("subscribe_feeds", ["slot"]); // tên feed tùy vào server
+      socket.emit("subscribe_feeds", ["sensor3"]); // tên feed tùy vào server
     });
 
-    socket.on("mqtt_message", (data) => {
-      console.log("Received:", data);
+    socket.on("mqtt_message", (message) => {
+      console.log("Received:", message);
 
-      const { slot } = data;
-
-      if (slot >= 1 && slot <= 4) {
-        setSlotStatus((prev) => ({
-          ...prev,
-          [slot]: slot >= 10 ? true : false, // < 10 → false → parkingareaOff
-        }));
-      }
+      const { data } = message;
+      
+      setSlotStatus({
+ // > 10 → false → parkingareaOff
+        1: data <= 10 ? true : false,
+        2: data <= 10 ? true : false,
+        3: data <= 10 ? true : false,
+        4: data <= 10 ? true : false
+      });
     });
 
     return () => {

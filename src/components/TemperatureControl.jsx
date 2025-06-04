@@ -9,7 +9,7 @@ function TemperatureControl() {
   const [temperature, setTemperature] = useState(22);
   const [angle, setAngle] = useState(0);
   const [isOn, setIsOn] = useState(false);
-
+  const [currentTemp, setCurrentTemp] = useState(0);
   const knobRef = useRef(null);
   const center = useRef({ x: 0, y: 0 });
   const isDragging = useRef(false);
@@ -22,10 +22,10 @@ function TemperatureControl() {
 
 
   const modes = [
-    { name: "snowflake", icon: snowflake },
-    { name: "summer", icon: summer },
-    { name: "dry", icon: dry },
-    { name: "fan", icon: fan },
+    { name: "snowflake", icon: snowflake, value: 15 },
+    { name: "summer", icon: summer, value: 30 },
+    { name: "dry", icon: dry, value:  20},
+    { name: "fan", icon: fan, value: 25},
   ];
 
   const angleToTemperature = (angle) => {
@@ -87,33 +87,43 @@ function TemperatureControl() {
 
   useEffect(() => {
     socket.connect();
-    if (!socket) return;
+    socket.on("connect", () => {
+      console.log("Đã kết nối tới server");
+      socket.emit("subscribe_feeds", ["sensor1"]);
+    });
   
-    const handleTempUpdate = async (data) => {
-      const newTemp = parseInt(data.value);
-      if (!isDragging.current) {
-        setTemperature(newTemp);
-        // tính góc từ nhiệt độ để xoay núm
-        const newAngle = ((newTemp - minTemp) / (maxTemp - minTemp)) * 270;
-        setAngle(newAngle);
-
-        if(newTemp !== lastSentTemp) {
-          try {
-            await setTemp(newTemp);
-            setLastSentTemp(newTemp);
-          } catch (error) {
-            console.error("Gửi nhiệt dộ thất bại");
-          }
-        }
-      }
+    const onMqttMessage = (message) => {
+      console.log("Received:", message);
+      const { data } = message;
+      setCurrentTemp(data);
     };
+
+    socket.on("mqtt_message", onMqttMessage);
+    // const handleTempUpdate = async (data) => {
+    //   const newTemp = parseInt(data.value);
+    //   if (!isDragging.current) {
+    //     setTemperature(newTemp);
+    //     // tính góc từ nhiệt độ để xoay núm
+    //     const newAngle = ((newTemp - minTemp) / (maxTemp - minTemp)) * 270;
+    //     setAngle(newAngle);
+
+    //     if(newTemp !== lastSentTemp) {
+    //       try {
+    //         await setTemp(newTemp);
+    //         setLastSentTemp(newTemp);
+    //       } catch (error) {
+    //         console.error("Gửi nhiệt dộ thất bại");
+    //       }
+    //     }
+    //   }
+    // };
   
-    socket.on("temperature_update", handleTempUpdate);
+    // socket.on("temperature_update", handleTempUpdate);
   
     return () => {
-      socket.off("temperature_update", handleTempUpdate);
+      socket.off("mqtt_message", onMqttMessage);
     };
-  }, [socket]);
+  }, []);
   
 
   return (
@@ -135,7 +145,7 @@ function TemperatureControl() {
           <div className="absolute w-4 h-4 bg-white rounded-full top-2 left-1/2 transform -translate-x-1/2" />
         </div>
 
-        <p className="mt-4 text-xl">Current temperature: {temperature}°C</p>
+        <p className="mt-4 text-xl">Current temperature: {currentTemp}°C</p>
 
         <div className="flex space-x-10 ">
           <button
