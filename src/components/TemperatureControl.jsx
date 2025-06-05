@@ -87,20 +87,15 @@ function TemperatureControl() {
 
   useEffect(() => {
     socket.connect();
-    socket.on("connect", () => {
-      console.log("Đã kết nối tới server");
-      socket.emit("subscribe_feeds", ["sensor1"]);
-    });
-  
-    const onMqttMessage = (message) => {
-      console.log("Received:", message);
-      const { data } = message;
-      setCurrentTemp(data);
-    };
 
-    socket.on("mqtt_message", onMqttMessage);
+    socket.on("connect", () => {
+      console.log("Connected to server");
+      socket.emit("subscribe_feeds", ["sensor3"]); // tên feed tùy vào server
+    });
+    
     // const handleTempUpdate = async (data) => {
     //   const newTemp = parseInt(data.value);
+    //   console.log(newTemp)
     //   if (!isDragging.current) {
     //     setTemperature(newTemp);
     //     // tính góc từ nhiệt độ để xoay núm
@@ -121,7 +116,7 @@ function TemperatureControl() {
     // socket.on("temperature_update", handleTempUpdate);
   
     return () => {
-      socket.off("mqtt_message", onMqttMessage);
+      socket.off("temperature_update", handleTempUpdate);
     };
   }, []);
   
@@ -145,7 +140,7 @@ function TemperatureControl() {
           <div className="absolute w-4 h-4 bg-white rounded-full top-2 left-1/2 transform -translate-x-1/2" />
         </div>
 
-        <p className="mt-4 text-xl">Current temperature: {currentTemp}°C</p>
+        <p className="mt-4 text-xl">Current temperature: {temperature}°C</p>
 
         <div className="flex space-x-10 ">
           <button

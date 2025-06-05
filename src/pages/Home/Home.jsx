@@ -66,7 +66,7 @@ function Home() {
       console.log("Đã kết nối tới server");
       socket.emit("subscribe_feeds",["sensor1","sensor2"] );
     });
-    socket.onAny((event,data) =>{console.log(event,data)});
+    // socket.onAny((event,data) =>{console.log(event,data)});
     socket.on("mqtt_message", (data) => {
        console.log(data);
       const { feed, data:value } = data;
