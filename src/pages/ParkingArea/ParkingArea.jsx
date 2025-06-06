@@ -1,44 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Navbar from "../../components/Navbar";
 import parkingareaoff from "../../assets/images/parkingareaoff.png";
 import parkingareaon from "../../assets/images/parkingareaon.png";
 import Footer from "../../components/Footer";
-import socket from "../../socket/socket";
+import { useSocket } from "../../socket/SocketContext";
 
 function ParkingArea() {
-  const [slotStatus, setSlotStatus] = useState({
-    1: false,
-    2: false,
-    3: false,
-    4: false,
-  });
+  const { socketData } = useSocket();
 
-  useEffect(() => {
-    socket.connect();
-
-    socket.on("connect", () => {
-      console.log("Connected to server");
-      socket.emit("subscribe_feeds", ["sensor3"]); // tên feed tùy vào server
-    });
-
-    socket.on("mqtt_message", (message) => {
-      console.log("Received:", message);
-
-      const { data } = message;
-      
-      setSlotStatus({
- // > 10 → false → parkingareaOff
-        1: data <= 10 ? true : false,
-        2: data <= 10 ? true : false,
-        3: data <= 10 ? true : false,
-        4: data <= 10 ? true : false
-      });
-    });
-
-    return () => {
-      socket.off("mqtt_message");
-    };
-  }, []);
+  // Giả sử sensor3 là giá trị cảm biến cho bãi đỗ xe
+  // Nếu data <= 10 thì slot có xe (true), > 10 thì không có xe (false)
+  const data = Number(socketData["sensor3"]) || 100;
+  const slotStatus = {
+    1: data <= 10,
+    2: data <= 10,
+    3: data <= 10,
+    4: data <= 10,
+  };
 
   return (
     <div>

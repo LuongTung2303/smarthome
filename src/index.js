@@ -4,11 +4,14 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import AppRouter from './router';
+import { SocketProvider } from './socket/SocketContext';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <AppRouter/>
+    <SocketProvider>
+      <AppRouter/>
+    </SocketProvider>
   </React.StrictMode>
 );
 

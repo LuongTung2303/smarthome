@@ -4,30 +4,47 @@ import snowflake from "../assets/images/snowflake.png";
 import fan from "../assets/images/fan.png";
 import dry from "../assets/images/dry.png";
 import { setTemp } from "../services/apiFeeds";
-import socket from "../socket/socket";
+import { useSocket } from "../socket/SocketContext";
+
+function convertTemperatureToFeedValue(temp) {
+  // 10°C -> 100, 30°C -> 0, tuyến tính
+  if (temp <= 10) return 100;
+  if (temp >= 30) return 0;
+  return Math.round(100 - ((temp - 10) * 100) / 20);
+}
+
 function TemperatureControl() {
-  const [temperature, setTemperature] = useState(22);
-  const [angle, setAngle] = useState(0);
-  const [isOn, setIsOn] = useState(false);
-  const [currentTemp, setCurrentTemp] = useState(0);
-  const knobRef = useRef(null);
-  const center = useRef({ x: 0, y: 0 });
-  const isDragging = useRef(false);
+  const { socketData } = useSocket();
+  const currentTemp = Number(socketData["sensor1"]) || 0;
 
   const minTemp = 10;
   const maxTemp = 30;
+  const [temperature, setTemperature] = useState(22);
+  const [angle, setAngle] = useState(0);
+  const [isOn, setIsOn] = useState(false);
+  const knobRef = useRef(null);
+  const center = useRef({ x: 0, y: 0 });
+  const isDragging = useRef(false);
   const [activeMode, setActiveMode] = useState(null);
-
   const [lastSentTemp, setLastSentTemp] = useState(null);
-
 
   const modes = [
     { name: "snowflake", icon: snowflake, value: 15 },
     { name: "summer", icon: summer, value: 30 },
-    { name: "dry", icon: dry, value:  20},
-    { name: "fan", icon: fan, value: 25},
+    { name: "dry", icon: dry, value: 20 },
+    { name: "fan", icon: fan, value: 25 },
   ];
 
+  // Khi chọn mode thì đổi nhiệt độ theo mode
+  const handleModeChange = (mode) => {
+    setActiveMode(mode.name);
+    setTemperature(mode.value);
+    // Xoay núm theo nhiệt độ mới
+    const newAngle = ((mode.value - minTemp) / (maxTemp - minTemp)) * 270;
+    setAngle(newAngle);
+  };
+
+  // Hàm chuyển đổi góc sang nhiệt độ
   const angleToTemperature = (angle) => {
     const normalized = (angle + 360) % 360;
     const temp = Math.round((normalized / 270) * (maxTemp - minTemp) + minTemp);
@@ -43,10 +60,11 @@ function TemperatureControl() {
     const clampedAngle = Math.max(0, Math.min(270, adjustedAngle));
     setAngle(clampedAngle);
     setTemperature(angleToTemperature(clampedAngle));
+    setActiveMode(null); // Khi kéo núm thì bỏ chọn mode
   };
 
   const handleMouseDown = (e) => {
-    if (!isOn) return; // 🔒 Nếu OFF thì không làm gì
+    if (!isOn) return;
     const rect = knobRef.current.getBoundingClientRect();
     center.current = {
       x: rect.left + rect.width / 2,
@@ -62,13 +80,12 @@ function TemperatureControl() {
     }
   };
 
-
   const handleMouseUp = async () => {
     isDragging.current = false;
-  
     if (isOn && temperature !== lastSentTemp) {
       try {
-        await setTemp(temperature);
+        const feedValue = convertTemperatureToFeedValue(temperature);
+        await setTemp(feedValue);
         setLastSentTemp(temperature);
       } catch (err) {
         alert("Gửi nhiệt độ thất bại");
@@ -83,47 +100,16 @@ function TemperatureControl() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isOn]);
+    // eslint-disable-next-line
+  }, [isOn, temperature]);
 
-  useEffect(() => {
-    socket.connect();
-
-    socket.on("connect", () => {
-      console.log("Connected to server");
-      socket.emit("subscribe_feeds", ["sensor3"]); // tên feed tùy vào server
-    });
-    
-    // const handleTempUpdate = async (data) => {
-    //   const newTemp = parseInt(data.value);
-    //   console.log(newTemp)
-    //   if (!isDragging.current) {
-    //     setTemperature(newTemp);
-    //     // tính góc từ nhiệt độ để xoay núm
-    //     const newAngle = ((newTemp - minTemp) / (maxTemp - minTemp)) * 270;
-    //     setAngle(newAngle);
-
-    //     if(newTemp !== lastSentTemp) {
-    //       try {
-    //         await setTemp(newTemp);
-    //         setLastSentTemp(newTemp);
-    //       } catch (error) {
-    //         console.error("Gửi nhiệt dộ thất bại");
-    //       }
-    //     }
-    //   }
-    // };
-  
-    // socket.on("temperature_update", handleTempUpdate);
-  
-    return () => {
-      socket.off("temperature_update", handleTempUpdate);
-    };
-  }, []);
-  
+  // Khi nhiệt độ thực tế từ socket thay đổi, chỉ cập nhật currentTemp (không ảnh hưởng núm xoay)
+  // Nếu muốn đồng bộ núm xoay với nhiệt độ thực tế, bỏ comment dòng dưới:
+  // useEffect(() => { setTemperature(currentTemp); }, [currentTemp]);
 
   return (
     <div className="mt-[50px]">
-        <h2 className="px-20 font-bold text-2xl">Tempreature Control</h2>
+      <h2 className="px-20 font-bold text-2xl">Tempreature Control</h2>
       <div className="flex flex-col items-center mt-10 space-y-4">
         <div
           ref={knobRef}
@@ -140,7 +126,9 @@ function TemperatureControl() {
           <div className="absolute w-4 h-4 bg-white rounded-full top-2 left-1/2 transform -translate-x-1/2" />
         </div>
 
-        <p className="mt-4 text-xl">Current temperature: {temperature}°C</p>
+        <p className="mt-4 text-xl">
+          Current temperature: {currentTemp}°C
+        </p>
 
         <div className="flex space-x-10 ">
           <button
@@ -166,7 +154,7 @@ function TemperatureControl() {
             {modes.map((mode) => (
               <button
                 key={mode.name}
-                onClick={() => setActiveMode(mode.name)}
+                onClick={() => handleModeChange(mode)}
                 className={`px-2 py-1 flex justify-center rounded-full w-20 h-8 transition-colors duration-200 ${
                   activeMode === mode.name ? "bg-blue-400" : "bg-[#F0DEEE]"
                 }`}
