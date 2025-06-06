@@ -20,7 +20,7 @@ function Register() {
 
     try {
       await registerUser({ username, password }); // Gọi API
-      navigate("/login"); // Đăng ký thành công thì chuyển sang login
+      navigate("/"); // Đăng ký thành công thì chuyển sang trang Home ("/")
     } catch (err) {
       setError(err.message); // Hiển thị lỗi nếu có
     }
